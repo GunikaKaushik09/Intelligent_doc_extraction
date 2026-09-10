@@ -1,0 +1,38 @@
+{
+  "_note": "Illustrative example demonstrating an explicit FAIL validation outcome (the reported total does not match the calculated total, beyond tolerance). Synthetic data, hand-built for documentation purposes -- not a live pipeline run.",
+  "document_name": "Sample Balance Sheet - Validation Failure",
+  "document_type": "balance_sheet",
+  "file_validation": {"is_valid": true, "file_type": "pdf", "page_count": 2, "file_size_bytes": 118500, "errors": []},
+  "extracted_data": {
+    "fields": {
+      "total_current_assets": {"value": 500000.0, "evidence": {"page_number": 1, "source_text": "Total Current Assets 500,000"}},
+      "total_non_current_assets": {"value": 1200000.0, "evidence": {"page_number": 1, "source_text": "Total Non-Current Assets 1,200,000"}},
+      "total_assets": {"value": 1750000.0, "evidence": {"page_number": 1, "source_text": "Total Assets 1,750,000"}}
+    },
+    "tables": [],
+    "raw_ocr_text_excerpt": "[PAGE 1]\nTotal Current Assets 500,000\nTotal Non-Current Assets 1,200,000\nTotal Assets 1,750,000\n..."
+  },
+  "financial_validations": [
+    {
+      "check_name": "Total Assets = Current Assets + Non-Current Assets",
+      "formula": "total_assets == total_current_assets + total_non_current_assets",
+      "input_values": {"total_current_assets": 500000.0, "total_non_current_assets": 1200000.0},
+      "calculated_value": 1700000.0,
+      "reported_value": 1750000.0,
+      "variance": 50000.0,
+      "variance_pct": 0.0294,
+      "tolerance_pct": 0.01,
+      "status": "FAIL",
+      "reason": "Reported value differs from the calculated value beyond tolerance."
+    }
+  ],
+  "processing_status": "PARTIAL_SUCCESS",
+  "processing_metadata": {
+    "request_id": "illustrative-example-0002",
+    "ocr_engine": "pymupdf_text",
+    "llm_model": "claude-sonnet-4-5",
+    "processing_time_ms": 2410,
+    "processed_at": "2024-03-31T10:00:00Z",
+    "page_count": 2
+  }
+}

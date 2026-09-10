@@ -1,0 +1,118 @@
+{
+  "_note": "Illustrative example. Built to document the exact response shape the API returns once every field is extracted (either by the LLM path with an ANTHROPIC_API_KEY configured, or from a clean, well-formatted source document). All other files in sample_outputs/ are RAW, UNEDITED outputs captured from live runs of this codebase against the provided dataset using the offline heuristic extractor.",
+  "document_name": "Sample Invoice - Fully Extracted",
+  "document_type": "invoice",
+  "file_validation": {
+    "is_valid": true,
+    "file_type": "jpg",
+    "page_count": 1,
+    "file_size_bytes": 245678,
+    "errors": []
+  },
+  "extracted_data": {
+    "fields": {
+      "invoice_number": {
+        "value": "INV-2024-00981",
+        "evidence": {"page_number": 1, "source_text": "Invoice No: INV-2024-00981"},
+        "confidence": null
+      },
+      "invoice_date": {
+        "value": "2024-03-12",
+        "evidence": {"page_number": 1, "source_text": "Date: 12/03/2024"},
+        "confidence": null
+      },
+      "seller_name": {
+        "value": "Summit Office Supplies Pte Ltd",
+        "evidence": {"page_number": 1, "source_text": "Summit Office Supplies Pte Ltd"},
+        "confidence": null
+      },
+      "buyer_name": {
+        "value": "Harborview Consulting LLP",
+        "evidence": {"page_number": 1, "source_text": "Bill To: Harborview Consulting LLP"},
+        "confidence": null
+      },
+      "currency": {
+        "value": "SGD",
+        "evidence": {"page_number": 1, "source_text": "SGD"},
+        "confidence": null
+      },
+      "subtotal": {
+        "value": 250.0,
+        "evidence": {"page_number": 1, "source_text": "Subtotal: 250.00"},
+        "confidence": null
+      },
+      "tax_amount": {
+        "value": 21.25,
+        "evidence": {"page_number": 1, "source_text": "GST 8.5%: 21.25"},
+        "confidence": null
+      },
+      "total_amount": {
+        "value": 271.25,
+        "evidence": {"page_number": 1, "source_text": "Total: 271.25"},
+        "confidence": null
+      },
+      "amount_paid": {
+        "value": 271.25,
+        "evidence": {"page_number": 1, "source_text": "Paid: 271.25"},
+        "confidence": null
+      },
+      "balance_due": {
+        "value": 0.0,
+        "evidence": {"page_number": 1, "source_text": "Balance Due: 0.00"},
+        "confidence": null
+      }
+    },
+    "tables": [
+      {
+        "name": "Line Items",
+        "columns": ["description", "quantity", "unit_price", "line_total"],
+        "rows": [
+          {
+            "cells": {"description": "A4 Copy Paper (5 reams)", "quantity": 5, "unit_price": 30.0, "line_total": 150.0},
+            "evidence": {"page_number": 1, "source_text": "A4 Copy Paper 5 x 30.00 150.00"}
+          },
+          {
+            "cells": {"description": "Ballpoint Pens (box of 50)", "quantity": 2, "unit_price": 50.0, "line_total": 100.0},
+            "evidence": {"page_number": 1, "source_text": "Ballpoint Pens 2 x 50.00 100.00"}
+          }
+        ]
+      }
+    ],
+    "raw_ocr_text_excerpt": "[PAGE 1]\nSummit Office Supplies Pte Ltd\nInvoice No: INV-2024-00981  Date: 12/03/2024\nBill To: Harborview Consulting LLP\n..."
+  },
+  "financial_validations": [
+    {
+      "check_name": "Total = Subtotal + Tax (+ Shipping - Discount)",
+      "formula": "total_amount == subtotal + tax_amount + shipping_charge - discount",
+      "input_values": {"subtotal": 250.0, "tax_amount": 21.25},
+      "calculated_value": 271.25,
+      "reported_value": 271.25,
+      "variance": 0.0,
+      "variance_pct": 0.0,
+      "tolerance_pct": 0.01,
+      "status": "PASS",
+      "reason": null
+    },
+    {
+      "check_name": "Balance Due = Total - Amount Paid",
+      "formula": "balance_due == total_amount - amount_paid",
+      "input_values": {"total_amount": 271.25, "amount_paid": 271.25},
+      "calculated_value": 0.0,
+      "reported_value": 0.0,
+      "variance": 0.0,
+      "variance_pct": 0.0,
+      "tolerance_pct": 0.01,
+      "status": "PASS",
+      "reason": null
+    }
+  ],
+  "processing_status": "SUCCESS",
+  "processing_metadata": {
+    "request_id": "illustrative-example-0001",
+    "ocr_engine": "tesseract_ocr",
+    "llm_model": "claude-sonnet-4-5",
+    "processing_time_ms": 3120,
+    "processed_at": "2024-03-12T09:15:00Z",
+    "page_count": 1
+  }
+}

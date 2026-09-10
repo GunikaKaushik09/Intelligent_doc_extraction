@@ -1,0 +1,45 @@
+# Render Blueprint - https://render.com/docs/blueprint-spec
+#
+# Deploy: push this repo to GitHub, then in the Render dashboard choose
+# "New" -> "Blueprint" and point it at the repo. Render will read this
+# file and provision the service automatically.
+#
+# NOTE on persistence: Render's free web-service plan does NOT support
+# attached Persistent Disks (that's a paid-plan feature). The SQLite file
+# still survives spin-down/spin-up (the service just sleeps after 15 min
+# of inactivity and wakes on the next request) but is wiped on every new
+# deploy. That's fine for a short evaluation window; for anything longer-
+# lived, either upgrade to a plan with a disk, or point DATABASE_URL at a
+# Render free Postgres instance instead (see README "Deployment" section).
+services:
+  - type: web
+    name: document-intelligence
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: DATABASE_URL
+        value: sqlite:///./data/document_intelligence.db
+      - key: MAX_FILE_SIZE_MB
+        value: "15"
+      - key: MAX_PAGE_COUNT
+        value: "3"
+      - key: VALIDATION_TOLERANCE_PCT
+        value: "0.01"
+      - key: LLM_PROVIDER
+        value: gemini
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: GEMINI_API_KEY
+        sync: false   # set manually in the Render dashboard - never commit real keys
+      - key: USE_MOCK_LLM
+        value: "false"
+      - key: CORS_ORIGINS
+        value: "*"

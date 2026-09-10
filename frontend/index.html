@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Document Intelligence Platform</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>Document Intelligence Platform</h1>
+    <p class="subtitle">Extraction &middot; Validation &middot; API</p>
+  </header>
+
+  <main class="layout">
+    <!-- Upload panel -->
+    <section class="panel upload-panel">
+      <h2>Process a Document</h2>
+      <form id="upload-form">
+        <label for="document_type">Document type</label>
+        <select id="document_type" name="document_type" required>
+          <option value="balance_sheet">Balance Sheet</option>
+          <option value="cash_flow">Cash Flow Statement</option>
+          <option value="profit_and_loss">Profit &amp; Loss Statement</option>
+          <option value="invoice">Invoice</option>
+        </select>
+
+        <label for="document_name">Document name (optional)</label>
+        <input type="text" id="document_name" name="document_name" placeholder="Defaults to file name" />
+
+        <label for="file">File (PDF / JPG / PNG, max 3 pages)</label>
+        <input type="file" id="file" name="file" accept=".pdf,.jpg,.jpeg,.png" required />
+
+        <button type="submit" id="process-btn">Process Document</button>
+      </form>
+      <div id="upload-status" class="status-box" hidden></div>
+    </section>
+
+    <!-- Dashboard panel -->
+    <section class="panel dashboard-panel">
+      <div class="dashboard-header">
+        <h2>Processed Documents</h2>
+        <button id="refresh-btn" title="Refresh list">&#8635; Refresh</button>
+      </div>
+      <table id="dashboard-table">
+        <thead>
+          <tr>
+            <th>Document Name</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Processed At</th>
+          </tr>
+        </thead>
+        <tbody id="dashboard-body">
+          <tr><td colspan="4" class="empty-row">No documents processed yet.</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <!-- Detail modal -->
+  <div id="detail-modal" class="modal" hidden>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="detail-title">Document Detail</h2>
+        <div class="modal-actions">
+          <button id="toggle-json-btn">View Raw JSON</button>
+          <button id="close-modal-btn" class="close-btn">&times;</button>
+        </div>
+      </div>
+      <div id="detail-body" class="modal-body"></div>
+      <pre id="raw-json-view" class="raw-json" hidden></pre>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

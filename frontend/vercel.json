@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/health",
+      "destination": "https://document-intelligence-api-xfnn.onrender.com/health"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://document-intelligence-api-xfnn.onrender.com/api/:path*"
     }

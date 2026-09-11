@@ -40,6 +40,8 @@ def _parse_llm_json(raw_text: str) -> dict:
 
 
 def _call_gemini(document_type: str, ocr_result: OCRResult) -> dict:
+    import time
+
     from google import genai
     from google.genai import errors as genai_errors
     from google.genai import types as genai_types
@@ -147,52 +149,161 @@ def _call_gemini(document_type: str, ocr_result: OCRResult) -> dict:
         ]
     }
 
-    try:
-        response = client.models.generate_content(
-            model=settings.GEMINI_MODEL,
-            contents=prompt,
-            config=genai_types.GenerateContentConfig(
-                max_output_tokens=settings.LLM_MAX_TOKENS,
-                response_mime_type="application/json",
-                response_json_schema=response_schema,
-                http_options=genai_types.HttpOptions(
-                    timeout=settings.LLM_TIMEOUT_SECONDS * 1000
-                ),
-            ),
+    max_attempts = 3
+    last_json_error = None
+
+    for attempt in range(1, max_attempts + 1):
+
+        logger.info(
+            "Gemini extraction attempt %s/%s for document type: %s",
+            attempt,
+            max_attempts,
+            document_type,
         )
 
-    except genai_errors.ClientError as exc:
-        if "deadline" in str(exc).lower() or "timeout" in str(exc).lower():
-            raise LLMTimeoutError(
-                "LLM extraction call timed out."
+        try:
+            response = client.models.generate_content(
+                model=settings.GEMINI_MODEL,
+                contents=prompt,
+                config=genai_types.GenerateContentConfig(
+                    max_output_tokens=settings.LLM_MAX_TOKENS,
+                    response_mime_type="application/json",
+                    response_json_schema=response_schema,
+                    http_options=genai_types.HttpOptions(
+                        timeout=settings.LLM_TIMEOUT_SECONDS * 1000
+                    ),
+                ),
+            )
+
+            # Structured output may already be parsed by the SDK.
+            parsed = getattr(response, "parsed", None)
+
+            if isinstance(parsed, dict):
+                logger.info(
+                    "Gemini structured response parsed successfully on attempt %s.",
+                    attempt,
+                )
+                return parsed
+
+            raw_text = response.text or ""
+
+            try:
+                parsed_json = _parse_llm_json(raw_text)
+
+                logger.info(
+                    "Gemini JSON response parsed successfully on attempt %s.",
+                    attempt,
+                )
+
+                return parsed_json
+
+            except json.JSONDecodeError as exc:
+                last_json_error = exc
+
+                logger.warning(
+                    "Gemini returned invalid JSON on attempt %s/%s: %s",
+                    attempt,
+                    max_attempts,
+                    exc,
+                )
+
+                logger.error(
+                    "Gemini raw response (first 2000 chars): %s",
+                    raw_text[:2000],
+                )
+
+                if attempt < max_attempts:
+                    wait_seconds = 2 ** attempt
+
+                    logger.info(
+                        "Retrying Gemini extraction in %s seconds...",
+                        wait_seconds,
+                    )
+
+                    time.sleep(wait_seconds)
+                    continue
+
+                raise ExtractionError(
+                    "LLM returned a response that could not be parsed as JSON.",
+                    details={"reason": str(exc)}
+                ) from exc
+
+        except genai_errors.ClientError as exc:
+            error_text = str(exc).lower()
+
+            if "deadline" in error_text or "timeout" in error_text:
+                if attempt < max_attempts:
+                    wait_seconds = 2 ** attempt
+
+                    logger.warning(
+                        "Gemini request timed out on attempt %s/%s. "
+                        "Retrying in %s seconds...",
+                        attempt,
+                        max_attempts,
+                        wait_seconds,
+                    )
+
+                    time.sleep(wait_seconds)
+                    continue
+
+                raise LLMTimeoutError(
+                    "LLM extraction call timed out."
+                ) from exc
+
+            # Some temporary availability errors may be returned as ClientError.
+            if "503" in error_text or "unavailable" in error_text:
+                if attempt < max_attempts:
+                    wait_seconds = 2 ** attempt
+
+                    logger.warning(
+                        "Gemini temporarily unavailable on attempt %s/%s. "
+                        "Retrying in %s seconds...",
+                        attempt,
+                        max_attempts,
+                        wait_seconds,
+                    )
+
+                    time.sleep(wait_seconds)
+                    continue
+
+            raise ExtractionError(
+                "LLM extraction call failed.",
+                details={"reason": str(exc)}
             ) from exc
 
-        raise ExtractionError(
-            "LLM extraction call failed.",
-            details={"reason": str(exc)}
-        ) from exc
+        except genai_errors.ServerError as exc:
+            error_text = str(exc).lower()
 
-    except genai_errors.ServerError as exc:
-        raise ExtractionError(
-            "LLM extraction call failed.",
-            details={"reason": str(exc)}
-        ) from exc
+            if attempt < max_attempts:
+                wait_seconds = 2 ** attempt
 
-    raw_text = response.text or ""
+                logger.warning(
+                    "Gemini server error on attempt %s/%s: %s. "
+                    "Retrying in %s seconds...",
+                    attempt,
+                    max_attempts,
+                    exc,
+                    wait_seconds,
+                )
 
-    try:
-        return _parse_llm_json(raw_text)
+                time.sleep(wait_seconds)
+                continue
 
-    except json.JSONDecodeError as exc:
-        logger.error(
-            "Gemini returned invalid JSON: %s",
-            raw_text[:2000]
-        )
+            raise ExtractionError(
+                "LLM extraction call failed.",
+                details={"reason": str(exc)}
+            ) from exc
 
+    # This should only be reached if all attempts fail unexpectedly.
+    if last_json_error is not None:
         raise ExtractionError(
             "LLM returned a response that could not be parsed as JSON.",
-            details={"reason": str(exc)}
-        ) from exc
+            details={"reason": str(last_json_error)}
+        ) from last_json_error
+
+    raise ExtractionError(
+        "LLM extraction call failed after multiple attempts."
+    )
 
 
 def _call_claude(document_type: str, ocr_result: OCRResult) -> dict:

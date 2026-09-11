@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://document-intelligence-api-xfnn.onrender.com/api/:path*"
+    }
+  ]
+}
